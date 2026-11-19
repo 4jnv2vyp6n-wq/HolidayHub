@@ -138,7 +138,7 @@
                         <div class="mt-6 text-holiday-dark text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
                     </div>
 
-                    <div @click="selectTopic('General Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
+                    <div v-if="isManager || currentStore?.layout === '2.0'" @click="selectTopic('General Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
                         <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-tags text-xl"></i>
                         </div>
@@ -534,7 +534,7 @@
 
         const MANAGER_PASSWORD = 'R5050Holiday';
 
-        // layout: '3.0' stores see General + 3.0 Merchandising; '2.0' stores see General only
+        // layout: '3.0' stores see 3.0 Merchandising only; '2.0' stores see General Merchandising only
         const STORES = [
             { id: '0543', name: 'FORT LAUDERDALE', code: '108246', layout: '2.0' },
             { id: '0551', name: 'PLANTATION',      code: '28752',  layout: '2.0' },
@@ -776,11 +776,11 @@
                 },
 
                 // ----- Checklists -----
-                tasksFor(store) { return store.layout === '3.0' ? [...GENERAL_TASKS, ...SHOP30_TASKS] : GENERAL_TASKS; },
+                tasksFor(store) { return store.layout === '3.0' ? SHOP30_TASKS : GENERAL_TASKS; },
                 sectionsFor(store) {
-                    const sections = [{ title: 'General Merchandising', color: 'text-holiday-red', tasks: GENERAL_TASKS }];
-                    if (store.layout === '3.0') sections.push({ title: '3.0 Merchandising', color: 'text-holiday-green', tasks: SHOP30_TASKS });
-                    return sections;
+                    return store.layout === '3.0'
+                        ? [{ title: '3.0 Merchandising', color: 'text-holiday-green', tasks: SHOP30_TASKS }]
+                        : [{ title: 'General Merchandising', color: 'text-holiday-red', tasks: GENERAL_TASKS }];
                 },
                 taskInfo(taskId, storeId = this.selectedStore) { return (this.shared.progress[storeId] || {})[taskId]; },
                 isDone(taskId, storeId = this.selectedStore) { return !!this.taskInfo(taskId, storeId)?.completed; },
