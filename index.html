@@ -156,21 +156,12 @@
                         <div class="mt-6 text-holiday-green text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
                     </div>
 
-                    <div @click="selectTopic('AppleCare+ Strategy')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
-                        <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-shield-halved text-xl"></i>
-                        </div>
-                        <h2 class="text-xl font-bold mb-2">AppleCare+ Strategy</h2>
-                        <p class="text-sm text-holiday-subtext flex-1">Objection handling and conversational toolkits.</p>
-                        <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
-                    </div>
-
                     <div @click="selectTopic('Toolkit')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
                         <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-toolbox text-xl"></i>
                         </div>
                         <h2 class="text-xl font-bold mb-2">Toolkit</h2>
-                        <p class="text-sm text-holiday-subtext flex-1">Accessories planogram visual reference and operational shortcuts.</p>
+                        <p class="text-sm text-holiday-subtext flex-1">AppleCare+ strategy, planogram visual reference, and operational shortcuts.</p>
                         <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
                     </div>
 
@@ -271,8 +262,17 @@
                     <!-- 1. 2.0 MERCHANDISING -->
                     <div v-if="selectedTopic === '2.0 Merchandising'">
                         <div class="mb-6">
-                            <h3 class="text-2xl font-bold">Merchandising Guidelines</h3>
+                            <h3 class="text-2xl font-bold">Merchandising</h3>
                             <p class="text-sm text-holiday-subtext">General store-wide execution standards</p>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-4">Apple Shop daily checklist</h3>
+                            <div class="apple-card">
+                                <ul class="space-y-3 text-sm text-holiday-dark">
+                                    <li v-for="item in dailyChecklist" :key="item" class="flex items-start"><i class="fa-solid fa-circle-dot text-[10px] mt-1 mr-3 text-holiday-green"></i> {{ item }}</li>
+                                </ul>
+                            </div>
                         </div>
 
                         <div class="apple-card mb-8">
@@ -293,34 +293,25 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mb-8">
-                            <h3 class="text-2xl font-bold mb-4">Holiday Accessory Bundles</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div class="apple-card flex flex-col border-t-4 border-holiday-red" v-for="bundle in bundles" :key="bundle.id">
-                                    <h4 class="font-bold text-lg mb-1">{{ bundle.name }}</h4>
-                                    <p class="text-sm text-holiday-subtext mb-4">{{ bundle.goal }}</p>
-                                    <ul class="text-sm space-y-2 mb-4 flex-1">
-                                        <li v-for="prod in bundle.products" :key="prod" class="flex items-start text-holiday-dark">
-                                            <i class="fa-solid fa-plus text-[10px] mt-1 mr-2 text-holiday-red"></i> {{ prod }}
-                                        </li>
-                                    </ul>
-                                    <div class="bg-holiday-lightRed p-3 rounded-lg">
-                                        <p class="text-sm text-holiday-redDark italic">"{{ bundle.script }}"</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- 2. 3.0 MERCHANDISING -->
                     <div v-if="selectedTopic === '3.0 Merchandising'">
                         <div class="mb-6">
-                            <h3 class="text-2xl font-bold">Shop 3.0 Execution</h3>
+                            <h3 class="text-2xl font-bold">Merchandising</h3>
                             <p class="text-sm text-holiday-subtext">Master Checklist for 3.0 environments</p>
                         </div>
 
-                        <div class="apple-card mb-6">
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-4">Apple Shop daily checklist</h3>
+                            <div class="apple-card">
+                                <ul class="space-y-3 text-sm text-holiday-dark">
+                                    <li v-for="item in dailyChecklist" :key="item" class="flex items-start"><i class="fa-solid fa-circle-dot text-[10px] mt-1 mr-3 text-holiday-green"></i> {{ item }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="apple-card mb-8">
                             <div class="space-y-3">
                                 <div v-for="task in shop30Tasks" :key="task.id" class="flex items-start p-3 rounded-lg border transition-all"
                                      :class="isDone(task.id) ? 'border-holiday-green bg-holiday-lightGreen' : 'border-gray-200 hover:bg-gray-50'">
@@ -340,38 +331,22 @@
                         </div>
                     </div>
 
-                    <!-- 3. APPLECARE+ STRATEGY -->
-                    <div v-if="selectedTopic === 'AppleCare+ Strategy'">
-                        <div class="mb-6">
-                            <h3 class="text-2xl font-bold">Objection Handling</h3>
-                            <p class="text-sm text-holiday-subtext">Common scenarios and response strategies</p>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="apple-card border-l-4 border-holiday-red" v-for="obj in objections" :key="obj.quote">
-                                <div class="flex items-start space-x-3 mb-4">
-                                    <div class="w-8 h-8 rounded-full bg-holiday-lightRed flex items-center justify-center text-holiday-red flex-shrink-0">
-                                        <i class="fa-solid fa-user"></i>
-                                    </div>
-                                    <p class="font-bold text-holiday-dark mt-1">"{{ obj.quote }}"</p>
-                                </div>
-                                <div class="bg-holiday-gray p-4 rounded-xl">
-                                    <p class="text-xs font-bold text-holiday-subtext uppercase tracking-wider mb-2">Response Strategy</p>
-                                    <p class="text-sm text-gray-700 mb-3">{{ obj.response }}</p>
-                                    <p class="text-xs text-holiday-red font-medium"><i class="fa-solid fa-lightbulb mr-1"></i> {{ obj.tip }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. TOOLKIT -->
+                    <!-- 3. TOOLKIT (AppleCare+ Strategy + Execution Resources) -->
                     <div v-if="selectedTopic === 'Toolkit'">
                         <div class="mb-6">
                             <h3 class="text-2xl font-bold">Execution Toolkit</h3>
-                            <p class="text-sm text-holiday-subtext">Quick references and operational shortcuts</p>
+                            <p class="text-sm text-holiday-subtext">AppleCare+ strategy, planograms, and operational shortcuts</p>
                         </div>
 
-                        <div class="space-y-4 mb-8">
-                            <a href="https://www.icloud.com/shortcuts/ef490bce201d4e579ffcb6358bf911dc" target="_blank" class="apple-card bg-holiday-red text-white block hover:bg-holiday-redDark transition-colors !mb-0">
+                        <!-- Toolkit tabs -->
+                        <div class="flex space-x-2 mb-8 bg-gray-200/50 p-1 rounded-xl">
+                            <button @click="activeToolkitTab = 'applecare'" :class="activeToolkitTab === 'applecare' ? 'bg-white shadow-sm font-bold text-holiday-dark' : 'text-holiday-subtext hover:text-holiday-dark font-medium'" class="flex-1 py-2 px-4 rounded-lg text-sm transition-all">AppleCare+ Strategy</button>
+                            <button @click="activeToolkitTab = 'resources'" :class="activeToolkitTab === 'resources' ? 'bg-white shadow-sm font-bold text-holiday-dark' : 'text-holiday-subtext hover:text-holiday-dark font-medium'" class="flex-1 py-2 px-4 rounded-lg text-sm transition-all">Execution Resources</button>
+                        </div>
+
+                        <!-- AppleCare+ Strategy tab -->
+                        <div v-if="activeToolkitTab === 'applecare'">
+                            <a href="https://www.icloud.com/shortcuts/ef490bce201d4e579ffcb6358bf911dc" target="_blank" class="apple-card bg-holiday-red text-white block hover:bg-holiday-redDark transition-colors mb-8">
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h3 class="text-xl font-bold mb-2">AppleCare Pricing Shortcut</h3>
@@ -382,40 +357,116 @@
                                     </div>
                                 </div>
                             </a>
-                            <a href="https://apple.ent.box.com/folder/439228209404" target="_blank" class="apple-card bg-holiday-green text-white block hover:bg-holiday-greenDark transition-colors !mb-0">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-xl font-bold mb-2">Apple Product Velocity Sheet</h3>
-                                        <p class="text-sm opacity-90 max-w-sm">Download the Fall 2026 PDF covering audio, home, iPad, Mac, and Apple Watch velocity references.</p>
+
+                            <h3 class="text-xl font-bold mb-4">Objection Handling</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="apple-card border-l-4 border-holiday-red" v-for="obj in objections" :key="obj.quote">
+                                    <div class="flex items-start space-x-3 mb-4">
+                                        <div class="w-8 h-8 rounded-full bg-holiday-lightRed flex items-center justify-center text-holiday-red flex-shrink-0">
+                                            <i class="fa-solid fa-user"></i>
+                                        </div>
+                                        <p class="font-bold text-holiday-dark mt-1">"{{ obj.quote }}"</p>
                                     </div>
-                                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
-                                        <i class="fa-solid fa-file-pdf text-2xl"></i>
+                                    <div class="bg-holiday-gray p-4 rounded-xl">
+                                        <p class="text-xs font-bold text-holiday-subtext uppercase tracking-wider mb-2">Response Strategy</p>
+                                        <p class="text-sm text-gray-700 mb-3">{{ obj.response }}</p>
+                                        <p class="text-xs text-holiday-red font-medium"><i class="fa-solid fa-lightbulb mr-1"></i> {{ obj.tip }}</p>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
                         </div>
 
-                        <div class="mb-8">
-                            <h3 class="text-2xl font-bold mb-4">Holiday Accessories Planogram</h3>
-                            <div class="overflow-x-auto hide-scrollbar pb-4">
-                                <div class="min-w-[1000px] bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                                    <h4 class="text-center font-bold text-2xl mb-6 tracking-tight">Accessories</h4>
-                                    <div class="grid grid-cols-10 gap-3 mb-3">
-                                        <div v-for="letter in ['A','B','C','D','E','F','G','H','I','J']" :key="letter" class="text-center font-bold text-holiday-subtext text-xl">{{ letter }}</div>
-                                    </div>
-                                    <div class="grid grid-cols-10 gap-3">
-                                        <div v-for="(item, idx) in planogramGrid" :key="idx" class="bg-holiday-gray border border-gray-200 rounded-lg p-2 flex flex-col justify-between h-36 hover:border-holiday-red hover:shadow-md transition-all relative">
-                                            <div class="w-2 h-2 bg-gray-300 rounded-full mx-auto mb-2 shadow-inner"></div>
-                                            <div class="text-[9px] font-bold text-holiday-dark text-center leading-tight mb-2">{{ item.name }}</div>
-                                            <div class="text-[9px] font-mono text-holiday-subtext text-center mt-auto bg-white rounded py-1 border border-gray-100 break-all">{{ item.id || 'N/A' }}</div>
+                        <!-- Execution Resources tab -->
+                        <div v-if="activeToolkitTab === 'resources'">
+                            <div class="space-y-4 mb-8">
+                                <a href="https://apple.ent.box.com/folder/439228209404" target="_blank" class="apple-card bg-holiday-green text-white block hover:bg-holiday-greenDark transition-colors !mb-0">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h3 class="text-xl font-bold mb-2">Apple Product Velocity Sheet</h3>
+                                            <p class="text-sm opacity-90 max-w-sm">Download the Fall 2026 PDF covering audio, home, iPad, Mac, and Apple Watch velocity references.</p>
+                                        </div>
+                                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
+                                            <i class="fa-solid fa-file-pdf text-2xl"></i>
                                         </div>
                                     </div>
+                                </a>
+                                <a href="https://apple.ent.box.com/s/6bmg75qh2r74m42y4h0v58j7aoahdxi2" target="_blank" class="apple-card bg-holiday-dark text-white block hover:bg-black transition-colors !mb-0">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h3 class="text-xl font-bold mb-2">Recommended Accessories Sheet</h3>
+                                            <p class="text-sm opacity-90 max-w-sm">View and download the recommended accessories reference sheet.</p>
+                                        </div>
+                                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
+                                            <i class="fa-solid fa-file-invoice text-2xl"></i>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="text-xl font-bold mb-4">Holiday Accessories Planogram</h3>
+                                <div class="overflow-x-auto hide-scrollbar pb-4">
+                                    <div class="min-w-[1000px] bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                                        <h4 class="text-center font-bold text-2xl mb-6 tracking-tight">Accessories</h4>
+                                        <div class="grid grid-cols-10 gap-3 mb-3">
+                                            <div v-for="letter in ['A','B','C','D','E','F','G','H','I','J']" :key="letter" class="text-center font-bold text-holiday-subtext text-xl">{{ letter }}</div>
+                                        </div>
+                                        <div class="grid grid-cols-10 gap-3">
+                                            <div v-for="(item, idx) in planogramGrid" :key="idx" class="bg-holiday-gray border border-gray-200 rounded-lg p-2 flex flex-col justify-between h-36 hover:border-holiday-red hover:shadow-md transition-all relative">
+                                                <div class="w-2 h-2 bg-gray-300 rounded-full mx-auto mb-2 shadow-inner"></div>
+                                                <div class="text-[9px] font-bold text-holiday-dark text-center leading-tight mb-2">{{ item.name }}</div>
+                                                <div class="text-[9px] font-mono text-holiday-subtext text-center mt-auto bg-white rounded py-1 border border-gray-100 break-all">{{ item.id || 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="text-xl font-bold mb-4">Share with Partners</h3>
+                                <div class="space-y-4">
+                                    <a href="https://salescoach.apple.com" target="_blank" class="apple-card border border-gray-200 block hover:border-holiday-red transition-colors !mb-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="text-xl font-bold mb-2 text-holiday-dark">Apple Sales Coach</h3>
+                                                <p class="text-sm text-holiday-subtext max-w-sm">Quick, interactive training and instant, Apple-verified answers directly on mobile devices.</p>
+                                            </div>
+                                            <div class="w-16 h-16 bg-holiday-lightRed rounded-full flex items-center justify-center text-holiday-red flex-shrink-0 ml-4">
+                                                <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+
+                                    <!-- TODO: add the Guide link (currently "#") -->
+                                    <a href="#" class="apple-card border border-gray-200 block hover:border-holiday-green transition-colors !mb-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="text-xl font-bold mb-2 text-holiday-dark">Guide</h3>
+                                                <p class="text-sm text-holiday-subtext max-w-sm">Real-time assisted sales tool with personalized recommendations, dynamic model comparisons, and impactful demos.</p>
+                                            </div>
+                                            <div class="w-16 h-16 bg-holiday-lightGreen rounded-full flex items-center justify-center text-holiday-green flex-shrink-0 ml-4">
+                                                <i class="fa-solid fa-compass text-2xl"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+
+                                    <a href="https://apps.apple.com/us/app/apple-support/id1130498044" target="_blank" class="apple-card border border-gray-200 block hover:border-gray-400 transition-colors !mb-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="text-xl font-bold mb-2 text-holiday-dark">Apple Support App</h3>
+                                                <p class="text-sm text-holiday-subtext max-w-sm">Access personalized support, check repair status, and find solutions for Apple products.</p>
+                                            </div>
+                                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-holiday-dark flex-shrink-0 ml-4">
+                                                <i class="fa-brands fa-apple text-2xl"></i>
+                                            </div>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 5. FEEDBACK -->
+                    <!-- 4. FEEDBACK -->
                     <div v-if="selectedTopic === 'Feedback'">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -555,23 +606,41 @@
         ].map(s => ({ ...s, label: `BEST BUY - ${s.id}-${s.name} (${s.code})` }));
 
         const GENERAL_TASKS = [
-            { id: 'gen1', title: 'Spider-Wraps & Acrylic Cases: Having pencils, keyboards, and audio with security for customers to grab.' },
-            { id: 'gen2', title: 'Accessory Trays: Utilize accessory trays to present open-box ecosystems and options where permitted.' },
-            { id: 'gen3', title: '2.0 Shop Pegs: Since you cannot stage physical bundles on tables, bundle via proximity. Hang 20W power adapters directly adjacent to MagSafe chargers and high-volume cables so the customer naturally grabs both.' },
-            { id: 'gen4', title: 'Open box basket/tray in shop' },
-            { id: 'gen5', title: 'Dedicated register' },
-            { id: 'gen6', title: 'AppleCare+ ESL (monthly where applicable)' }
+            { id: 'gen7',  title: 'iPad keyboards and/or pencils easily accessible' },
+            { id: 'gen8',  title: 'Accessory Trays on tables' },
+            { id: 'gen9',  title: 'Display beats in shop' },
+            { id: 'gen4',  title: 'Open box basket/tray in shop' },
+            { id: 'gen5',  title: 'Dedicated register' },
+            { id: 'gen6',  title: 'AppleCare+ ESL (monthly where applicable)' },
+            { id: 'gen10', title: 'Holiday accessories planogram' },
+            { id: 'gen11', title: 'Easily accessibly AirTag' },
+            { id: 'gen12', title: 'AppleCare+ Hangtags in shop' },
+            { id: 'gen13', title: 'AppleCare+ Hangtags in frontlanes' }
         ];
 
         const SHOP30_TASKS = [
-            { id: '30a', title: 'Evaluate empty glass cage spaces for colorful audio displays.' },
-            { id: '30e', title: 'Flex Glass Cages Ex: when Apple TV isn’t available populate with audio prioritizing color pop. Same is applicable for iPhone cases & Apple Watch bands.' },
-            { id: '30f', title: 'Flex Bar Staging: Convert bare countertops into "Gifts Ready to Go" feature bars, and potentially have accessories bundles.' },
-            { id: '30c', title: 'Evaluate Beats visibility on the flex bar.' },
-            { id: '30d', title: 'Identify areas where additional gift discovery is possible.' },
+            { id: '30j', title: 'Flex glass cages inventory' },
+            { id: '30k', title: 'Display inventory on Flex Bar' },
+            { id: '30l', title: 'Display beats in shop' },
             { id: '30g', title: 'Open box basket/tray in shop' },
             { id: '30h', title: 'Dedicated register' },
-            { id: '30i', title: 'AppleCare+ ESL (monthly where applicable)' }
+            { id: '30i', title: 'AppleCare+ ESL (monthly where applicable)' },
+            { id: '30m', title: 'iPad keyboards and/or pencils easily accessible' },
+            { id: '30n', title: 'Holiday accessories planogram' },
+            { id: '30o', title: 'Easily accessibly AirTag' },
+            { id: '30p', title: 'AppleCare+ Hangtags in shop' },
+            { id: '30q', title: 'AppleCare+ Hangtags in frontlanes' }
+        ];
+
+        // Reference list shown on both Merchandising pages (not tracked)
+        const DAILY_CHECKLIST = [
+            'Demo products are charging and displaying video loops',
+            'Security devices are activated',
+            'Demo devices are clean',
+            'Acrylics are clean with no scratches',
+            'Products and signage are set according to the planogram',
+            'Fixtures and carpets are clean',
+            'Fixtures are easily accessible and clear of extra products or signage'
         ];
 
         /* ---------- Storage: Firebase (shared) or this device (demo) ---------- */
@@ -665,6 +734,8 @@
                     stores: STORES,
                     generalTasks: GENERAL_TASKS,
                     shop30Tasks: SHOP30_TASKS,
+                    dailyChecklist: DAILY_CHECKLIST,
+                    activeToolkitTab: 'applecare',
                     dashboardStoreId: null,
                     photoTarget: null,
                     uploading: false,
@@ -674,13 +745,11 @@
                     feedbackForm: { type: 'Merchandising Ideas', title: '', description: '', photo: '' },
                     openComments: {},
                     commentDrafts: {},
-                    bundles: [
-                        { id: 1, name: 'Stocking Stuffer Essentials', goal: 'Help gift-givers identify practical charging essentials.', products: ['20W USB-C Power Adapter', '2m Woven USB-C Cable'], script: 'Giving a new iPhone this year? You might want to grab this adapter so they can fast-charge right out of the box.' },
-                        { id: 2, name: 'iPad Creative Suite', goal: 'Help customers build a complete iPad experience.', products: ['Apple Pencil', 'Smart Folio Case'], script: 'Are they planning to draw or take notes? The Apple Pencil completely changes how you use the iPad.' }
-                    ],
                     objections: [
-                        { quote: "I'm buying this as a gift.", response: "That's a great gift! A lot of people add AppleCare+ before wrapping it so the person receiving it doesn't have to worry right away.", tip: "Frame it as enhancing the gift." },
-                        { quote: "It's too expensive.", response: "I completely understand. Just to give you context, a cracked screen repair out of pocket can be over $279, but with AppleCare+, it's just $29.", tip: "Compare upfront cost vs out-of-pocket repair." }
+                        { quote: "I’m careful with my devices.", response: "I am super careful with my devices as well but even the most careful people can't always avoid accidents, like an unexpected drop or spill. Customers have found that AppleCare+ really gives them peace of mind, especially if they travel a lot.", tip: "Acknowledge and highlight peace of mind." },
+                        { quote: "I don’t live in the US.", response: "Apple will provide whatever service options are available in “the other” country. Customers can get service at Apple Stores and Apple Authorized Service providers worldwide.", tip: "Emphasize global repair coverage." },
+                        { quote: "I'm buying this as a gift.", response: "That's a great gift! A lot of people add AppleCare+ before wrapping it so the person receiving it doesn't have to worry right away. Plus AppleCare gives customers 24/7 priority access to Apple experts, in case they need help setting up their gift.", tip: "Frame it as enhancing the gift and setup." },
+                        { quote: "It's too expensive.", response: "I completely understand. Best Buy does offer financing options for your device and AppleCare.", tip: "Offer monthly option when applicable." }
                     ],
                     planogramGrid: [
                         { col: 'A', name: '20W USB-C POWER ADAPTER', id: '6437121' },
@@ -715,7 +784,7 @@
                 },
                 topicColorClass() {
                     if (this.selectedTopic === 'Store Dashboard') return 'text-holiday-dark';
-                    if (['2.0 Merchandising', 'AppleCare+ Strategy', 'Toolkit'].includes(this.selectedTopic)) return 'text-holiday-red';
+                    if (['2.0 Merchandising', 'Toolkit'].includes(this.selectedTopic)) return 'text-holiday-red';
                     return 'text-holiday-green';
                 },
                 userKey() {
@@ -765,6 +834,7 @@
                 selectTopic(topic) {
                     this.selectedTopic = topic;
                     this.dashboardStoreId = null;
+                    this.activeToolkitTab = 'applecare';
                     this.feedbackSubmitted = false;
                     this.currentView = 'content';
                     window.scrollTo(0, 0);
