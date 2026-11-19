@@ -267,7 +267,7 @@
                         </div>
 
                         <div class="mb-8">
-                            <h3 class="text-2xl font-bold mb-4">Apple Shop daily checklist</h3>
+                            <h3 class="text-2xl font-bold mb-4">Apple Shop Daily Checklist</h3>
                             <div class="apple-card">
                                 <ul class="space-y-3 text-sm text-holiday-dark">
                                     <li v-for="item in dailyChecklist" :key="item" class="flex items-start"><i class="fa-solid fa-circle-dot text-[10px] mt-1 mr-3 text-holiday-green"></i> {{ item }}</li>
@@ -275,6 +275,7 @@
                             </div>
                         </div>
 
+                        <h3 class="text-2xl font-bold mb-4">Holiday Shop Checklist</h3>
                         <div class="apple-card mb-8">
                             <div class="space-y-3">
                                 <div v-for="task in generalTasks" :key="task.id" class="flex items-start p-3 rounded-lg border transition-all"
@@ -299,11 +300,11 @@
                     <div v-if="selectedTopic === '3.0 Merchandising'">
                         <div class="mb-6">
                             <h3 class="text-2xl font-bold">Merchandising</h3>
-                            <p class="text-sm text-holiday-subtext">Master Checklist for 3.0 environments</p>
+                            <p class="text-sm text-holiday-subtext">Master checklist for Shop 3.0 environments</p>
                         </div>
 
                         <div class="mb-8">
-                            <h3 class="text-2xl font-bold mb-4">Apple Shop daily checklist</h3>
+                            <h3 class="text-2xl font-bold mb-4">Apple Shop Daily Checklist</h3>
                             <div class="apple-card">
                                 <ul class="space-y-3 text-sm text-holiday-dark">
                                     <li v-for="item in dailyChecklist" :key="item" class="flex items-start"><i class="fa-solid fa-circle-dot text-[10px] mt-1 mr-3 text-holiday-green"></i> {{ item }}</li>
@@ -311,6 +312,7 @@
                             </div>
                         </div>
 
+                        <h3 class="text-2xl font-bold mb-4">Holiday Shop Checklist</h3>
                         <div class="apple-card mb-8">
                             <div class="space-y-3">
                                 <div v-for="task in shop30Tasks" :key="task.id" class="flex items-start p-3 rounded-lg border transition-all"
@@ -349,8 +351,8 @@
                             <a href="https://www.icloud.com/shortcuts/ef490bce201d4e579ffcb6358bf911dc" target="_blank" class="apple-card bg-holiday-red text-white block hover:bg-holiday-redDark transition-colors mb-8">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <h3 class="text-xl font-bold mb-2">AppleCare Pricing Shortcut</h3>
-                                        <p class="text-sm opacity-90 max-w-sm">Download the admin-approved iOS Shortcut for instant pricing lookups directly from your device.</p>
+                                        <h3 class="text-xl font-bold mb-2">AppleCare+ Pricing Shortcut</h3>
+                                        <p class="text-sm opacity-90 max-w-sm">Download the admin-approved iOS shortcut for instant pricing lookups directly from your device.</p>
                                     </div>
                                     <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
                                         <i class="fa-solid fa-arrow-down text-2xl"></i>
@@ -437,8 +439,7 @@
                                         </div>
                                     </a>
 
-                                    <!-- TODO: add the Guide link (currently "#") -->
-                                    <a href="#" class="apple-card border border-gray-200 block hover:border-holiday-green transition-colors !mb-0">
+                                    <a href="https://apps.apple.com/us/app/guide/id1673602536" target="_blank" class="apple-card border border-gray-200 block hover:border-holiday-green transition-colors !mb-0">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <h3 class="text-xl font-bold mb-2 text-holiday-dark">Guide</h3>
@@ -534,12 +535,20 @@
                                             <button @click="openComments[post.id] = !openComments[post.id]" class="text-xs flex items-center font-medium hover:text-holiday-dark transition-colors">
                                                 <i class="fa-regular fa-comment mr-1"></i> {{ post.comments.length }}
                                             </button>
+                                            <button v-if="hasManagerReply(post)" @click="openComments[post.id] = true" class="text-[11px] flex items-center font-bold text-white bg-holiday-red rounded-full px-2.5 py-1">
+                                                <i class="fa-solid fa-user-tie mr-1"></i> {{ managerName }} replied
+                                            </button>
                                         </div>
 
                                         <div v-if="openComments[post.id]" class="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                                            <div v-for="(c, i) in post.comments" :key="i" class="bg-holiday-gray rounded-xl px-3 py-2">
-                                                <p class="text-xs font-bold">{{ c.author }} <span class="font-normal text-holiday-subtext">· {{ timeAgo(c.at) }}</span></p>
-                                                <p class="text-sm text-gray-700 whitespace-pre-line">{{ c.text }}</p>
+                                            <div v-for="(c, i) in sortedComments(post)" :key="i"
+                                                 :class="isManagerComment(c) ? 'bg-holiday-lightRed border-l-4 border-holiday-red rounded-xl px-4 py-3 shadow-sm' : 'bg-holiday-gray rounded-xl px-3 py-2'">
+                                                <p v-if="isManagerComment(c)" class="text-xs font-bold text-holiday-red flex items-center flex-wrap gap-1.5 mb-1">
+                                                    <span class="inline-flex items-center bg-holiday-red text-white rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider"><i class="fa-solid fa-user-tie mr-1"></i> Regional Manager</span>
+                                                    {{ managerName }} <span class="font-normal text-holiday-subtext">· {{ timeAgo(c.at) }}</span>
+                                                </p>
+                                                <p v-else class="text-xs font-bold">{{ c.author }} <span class="font-normal text-holiday-subtext">· {{ timeAgo(c.at) }}</span></p>
+                                                <p class="whitespace-pre-line" :class="isManagerComment(c) ? 'text-sm font-medium text-holiday-dark' : 'text-sm text-gray-700'">{{ c.text }}</p>
                                             </div>
                                             <form @submit.prevent="addComment(post)" class="flex gap-2">
                                                 <input v-model="commentDrafts[post.id]" placeholder="Write a comment..." class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-holiday-gray focus:ring-2 focus:ring-holiday-green outline-none">
@@ -584,6 +593,7 @@
         */
 
         const MANAGER_PASSWORD = 'R5050Holiday';
+        const MANAGER_NAME = 'Natalia';
 
         // layout: '3.0' stores see 3.0 Merchandising only; '2.0' stores see 2.0 Merchandising only
         const STORES = [
@@ -607,29 +617,29 @@
 
         const GENERAL_TASKS = [
             { id: 'gen7',  title: 'iPad keyboards and/or pencils easily accessible' },
-            { id: 'gen8',  title: 'Accessory Trays on tables' },
-            { id: 'gen9',  title: 'Display beats in shop' },
-            { id: 'gen4',  title: 'Open box basket/tray in shop' },
+            { id: 'gen8',  title: 'Accessory trays on tables' },
+            { id: 'gen9',  title: 'Display Beats in shop' },
+            { id: 'gen4',  title: 'Open-box basket/tray in shop' },
             { id: 'gen5',  title: 'Dedicated register' },
             { id: 'gen6',  title: 'AppleCare+ ESL (monthly where applicable)' },
             { id: 'gen10', title: 'Holiday accessories planogram' },
-            { id: 'gen11', title: 'Easily accessibly AirTag' },
-            { id: 'gen12', title: 'AppleCare+ Hangtags in shop' },
-            { id: 'gen13', title: 'AppleCare+ Hangtags in frontlanes' }
+            { id: 'gen11', title: 'Easily accessible AirTags' },
+            { id: 'gen12', title: 'AppleCare+ hangtags in shop' },
+            { id: 'gen13', title: 'AppleCare+ hangtags in front lanes' }
         ];
 
         const SHOP30_TASKS = [
-            { id: '30j', title: 'Flex glass cages inventory' },
-            { id: '30k', title: 'Display inventory on Flex Bar' },
-            { id: '30l', title: 'Display beats in shop' },
-            { id: '30g', title: 'Open box basket/tray in shop' },
+            { id: '30j', title: 'Flex Glass Cage inventory' },
+            { id: '30k', title: 'Display inventory on the Flex Bar' },
+            { id: '30l', title: 'Display Beats in shop' },
+            { id: '30g', title: 'Open-box basket/tray in shop' },
             { id: '30h', title: 'Dedicated register' },
             { id: '30i', title: 'AppleCare+ ESL (monthly where applicable)' },
             { id: '30m', title: 'iPad keyboards and/or pencils easily accessible' },
             { id: '30n', title: 'Holiday accessories planogram' },
-            { id: '30o', title: 'Easily accessibly AirTag' },
-            { id: '30p', title: 'AppleCare+ Hangtags in shop' },
-            { id: '30q', title: 'AppleCare+ Hangtags in frontlanes' }
+            { id: '30o', title: 'Easily accessible AirTags' },
+            { id: '30p', title: 'AppleCare+ hangtags in shop' },
+            { id: '30q', title: 'AppleCare+ hangtags in front lanes' }
         ];
 
         // Reference list shown on both Merchandising pages (not tracked)
@@ -736,6 +746,7 @@
                     shop30Tasks: SHOP30_TASKS,
                     dailyChecklist: DAILY_CHECKLIST,
                     activeToolkitTab: 'applecare',
+                    managerName: MANAGER_NAME,
                     dashboardStoreId: null,
                     photoTarget: null,
                     uploading: false,
@@ -746,10 +757,10 @@
                     openComments: {},
                     commentDrafts: {},
                     objections: [
-                        { quote: "I’m careful with my devices.", response: "I am super careful with my devices as well but even the most careful people can't always avoid accidents, like an unexpected drop or spill. Customers have found that AppleCare+ really gives them peace of mind, especially if they travel a lot.", tip: "Acknowledge and highlight peace of mind." },
-                        { quote: "I don’t live in the US.", response: "Apple will provide whatever service options are available in “the other” country. Customers can get service at Apple Stores and Apple Authorized Service providers worldwide.", tip: "Emphasize global repair coverage." },
-                        { quote: "I'm buying this as a gift.", response: "That's a great gift! A lot of people add AppleCare+ before wrapping it so the person receiving it doesn't have to worry right away. Plus AppleCare gives customers 24/7 priority access to Apple experts, in case they need help setting up their gift.", tip: "Frame it as enhancing the gift and setup." },
-                        { quote: "It's too expensive.", response: "I completely understand. Best Buy does offer financing options for your device and AppleCare.", tip: "Offer monthly option when applicable." }
+                        { quote: "I'm careful with my devices.", response: "I'm super careful with my devices as well, but even the most careful people can't always avoid accidents, like an unexpected drop or spill. Customers have found that AppleCare+ really gives them peace of mind, especially if they travel a lot.", tip: "Acknowledge and highlight peace of mind." },
+                        { quote: "I don't live in the US.", response: "Apple will provide whatever service options are available in their country. Customers can get service at Apple Stores and Apple Authorized Service Providers worldwide.", tip: "Emphasize global repair coverage." },
+                        { quote: "I'm buying this as a gift.", response: "That's a great gift! A lot of people add AppleCare+ before wrapping it so the person receiving it doesn't have to worry right away. Plus, AppleCare+ gives customers 24/7 priority access to Apple experts in case they need help setting up their gift.", tip: "Frame it as enhancing the gift and setup." },
+                        { quote: "It's too expensive.", response: "I completely understand. Best Buy does offer financing options for your device and AppleCare+.", tip: "Offer the monthly option when applicable." }
                     ],
                     planogramGrid: [
                         { col: 'A', name: '20W USB-C POWER ADAPTER', id: '6437121' },
@@ -759,16 +770,16 @@
                         { col: 'E', name: '60W USB-C CHARGE CABLE (1M)', id: '6562024' },
                         { col: 'F', name: '240W USB-C CHARGE CABLE (2M)', id: '6535192' },
                         { col: 'G', name: 'LIGHTNING TO USB CABLE (1M)', id: '6409794' },
-                        { col: 'H', name: 'USB-C TO LIGHTNING CABLE (1 M)', id: '6409793' },
+                        { col: 'H', name: 'USB-C TO LIGHTNING CABLE (1M)', id: '6409793' },
                         { col: 'I', name: 'USB-C TO LIGHTNING CABLE (2M)', id: '6474586' },
                         { col: 'J', name: 'USB-C TO MAGSAFE 3 CABLE (2M)', id: '6485371' },
                         { col: 'A', name: 'MAGSAFE CHARGER (1M)', id: '6343813' },
                         { col: 'B', name: 'MAGSAFE CHARGER (2M)', id: '6343816' },
-                        { col: 'C', name: 'APPLE WATCH MAG FAST CHARGER USB-C 1M', id: '6474587' },
-                        { col: 'D', name: 'EARPODS LIGHTNING CONNECTOR', id: '5577816' },
+                        { col: 'C', name: 'APPLE WATCH MAGNETIC FAST CHARGER USB-C (1M)', id: '6474587' },
+                        { col: 'D', name: 'EARPODS (LIGHTNING CONNECTOR)', id: '5577816' },
                         { col: 'E', name: 'EARPODS', id: '6848136' },
                         { col: 'F', name: 'EARPODS (USB-C)', id: '6550100' },
-                        { col: 'G', name: 'USB-C TO APPLE 3.5 MM HEADPHONE JACK ADAPTER', id: '6228671' },
+                        { col: 'G', name: 'USB-C TO 3.5MM HEADPHONE JACK ADAPTER', id: '6228671' },
                         { col: 'H', name: 'USB-C TO LIGHTNING ADAPTER', id: '6562025' },
                         { col: 'I', name: 'APPLE AIRTAG 1 PACK', id: '6461919' },
                         { col: 'J', name: 'APPLECARE+ HANGTAG', id: '' }
@@ -791,7 +802,7 @@
                     return this.isManager ? 'RM' : `${this.selectedStore}:${this.userName.trim().toLowerCase()}`;
                 },
                 authorLabel() {
-                    return this.isManager ? 'Regional Manager' : `${this.userName.trim()} (Store #${this.selectedStore})`;
+                    return this.isManager ? `${MANAGER_NAME} (Regional Manager)` : `${this.userName.trim()} (Store #${this.selectedStore})`;
                 },
                 sortedFeedback() { return [...this.shared.feedback].sort((a, b) => b.at - a.at); },
                 storeSummaries() {
@@ -888,6 +899,11 @@
                 },
 
                 // ----- Feedback, likes, comments -----
+                isManagerComment(c) { return !!c.manager || /^Regional Manager\b|\(Regional Manager\)$/.test(c.author || ''); },
+                hasManagerReply(post) { return post.comments.some(c => this.isManagerComment(c)); },
+                sortedComments(post) {
+                    return [...post.comments].sort((a, b) => (this.isManagerComment(b) - this.isManagerComment(a)) || (a.at - b.at));
+                },
                 feedbackFrom(storeId) { return this.sortedFeedback.filter(f => f.storeId === storeId); },
                 async submitFeedback() {
                     this.submitting = true;
@@ -917,7 +933,7 @@
                 addComment(post) {
                     const text = (this.commentDrafts[post.id] || '').trim();
                     if (!text) return;
-                    backend.addComment(post.id, { author: this.authorLabel, text, at: Date.now() })
+                    backend.addComment(post.id, { author: this.authorLabel, text, at: Date.now(), manager: this.isManager })
                         .then(() => { this.commentDrafts[post.id] = ''; })
                         .catch(e => alert('Could not save comment: ' + e.message));
                 },
