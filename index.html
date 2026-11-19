@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>R5050 Holiday Merch Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        holiday: {
+                            red: '#E0002B', redDark: '#B30022',
+                            green: '#008736', greenDark: '#006B2B',
+                            lightRed: '#FFF0F2', lightGreen: '#F0FFF4',
+                            dark: '#1D1D1F', gray: '#F5F5F7', white: '#FFFFFF', subtext: '#86868B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [v-cloak] { display: none; }
+        body { background-color: #F5F5F7; color: #1D1D1F; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .apple-card { background: #FFFFFF; border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 24px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .apple-card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
+        .festive-bg { position: fixed; inset: 0; z-index: -1; background-color: #F5F5F7; overflow: hidden; }
+        .festive-bg::before, .festive-bg::after { content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%; filter: blur(100px); opacity: 0.15; animation: float 20s infinite ease-in-out alternate; }
+        .festive-bg::before { background: #E0002B; top: -100px; left: -100px; }
+        .festive-bg::after { background: #008736; bottom: -100px; right: -100px; animation-delay: -10s; }
+        @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(100px, 50px); } }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak class="min-h-screen flex flex-col">
+
+        <div class="festive-bg"></div>
+
+        <!-- Shared hidden photo picker (camera or library) -->
+        <input type="file" accept="image/*" ref="photoInput" class="hidden" @change="onPhotoPicked">
+
+        <!-- Saving indicator -->
+        <div v-if="uploading" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-holiday-dark text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg flex items-center">
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving photo…
+        </div>
+
+        <!-- Photo viewer -->
+        <div v-if="viewingPhoto" @click="viewingPhoto = null" class="fixed inset-0 bg-black/80 z-[70] flex flex-col items-center justify-center p-4 cursor-zoom-out">
+            <img :src="viewingPhoto.data" class="max-h-[80vh] max-w-full rounded-2xl shadow-2xl">
+            <p class="text-white/80 text-sm mt-4">{{ viewingPhoto.by }} · {{ formatDate(viewingPhoto.at) }}</p>
+        </div>
+
+        <transition name="fade" mode="out-in">
+
+            <!-- VIEW 1: LOGIN -->
+            <div v-if="currentView === 'login'" class="flex-1 flex items-center justify-center p-6 relative">
+
+                <button @click="showManagerModal = true" class="absolute top-8 right-8 text-sm font-medium text-holiday-subtext hover:text-holiday-dark transition-colors flex items-center bg-white/50 backdrop-blur-md px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                    <i class="fa-solid fa-user-tie mr-2"></i> Regional Manager
+                </button>
+
+                <div class="apple-card w-full max-w-md !p-8 relative overflow-hidden text-center">
+                    <div class="w-16 h-16 bg-holiday-red text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fa-solid fa-gift text-3xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-holiday-dark tracking-tight mb-2">R5050 Hub</h1>
+                    <p class="text-sm text-holiday-subtext mb-8">Holiday Retail Execution Platform</p>
+
+                    <form @submit.prevent="login" class="space-y-4 text-left">
+                        <input type="text" v-model="userName" placeholder="Name" required
+                               class="w-full bg-holiday-gray border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-holiday-red focus:border-transparent transition-all">
+                        <select v-model="selectedStore" required class="w-full bg-holiday-gray border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-holiday-green focus:border-transparent transition-all text-holiday-dark">
+                            <option value="" disabled>Select your Best Buy...</option>
+                            <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.label }}</option>
+                        </select>
+                        <button type="submit" class="w-full bg-holiday-red hover:bg-holiday-redDark text-white font-bold rounded-xl px-4 py-3 mt-4 transition-colors flex justify-center items-center">
+                            Sign In <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </form>
+                    <div class="mt-6 text-xs text-holiday-subtext">Authorized personnel only.</div>
+                </div>
+
+                <!-- Regional Manager Password Modal -->
+                <div v-if="showManagerModal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 relative text-center">
+                        <button @click="showManagerModal = false; managerError = ''" class="absolute top-4 right-5 text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fa-solid fa-times text-xl"></i>
+                        </button>
+                        <div class="w-14 h-14 bg-holiday-gray text-holiday-dark rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                            <i class="fa-solid fa-lock text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Regional Manager</h3>
+                        <p class="text-sm text-holiday-subtext mb-6">Enter your authorization code.</p>
+                        <form @submit.prevent="managerLogin">
+                            <input type="password" v-model="managerPassword" placeholder="Password" required
+                                   class="w-full bg-holiday-gray border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-holiday-dark focus:border-transparent transition-all mb-2 text-center tracking-widest">
+                            <p v-if="managerError" class="text-xs text-holiday-red font-medium mb-2">{{ managerError }}</p>
+                            <button type="submit" class="w-full bg-holiday-dark hover:bg-black text-white font-bold rounded-xl px-4 py-3 mt-2 transition-colors">Authenticate</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: TOPIC SELECTION -->
+            <div v-else-if="currentView === 'topics'" class="flex-1 max-w-5xl mx-auto w-full p-6 pt-12 md:pt-20">
+                <div class="flex justify-between items-end mb-10 gap-4">
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-holiday-dark tracking-tight">{{ headerTitle }}</h1>
+                        <p class="text-holiday-subtext mt-2 text-lg">Select a topic to explore holiday execution.</p>
+                        <p v-if="syncMode === 'local'" class="mt-2 inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Demo mode: saved on this device only
+                        </p>
+                    </div>
+                    <button @click="logout" class="text-sm font-medium text-holiday-subtext hover:text-holiday-dark transition-colors flex-shrink-0">Sign Out</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Store Dashboard (Regional Manager only) -->
+                    <div v-if="isManager" @click="selectTopic('Store Dashboard')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-gray-300">
+                        <div class="w-14 h-14 bg-holiday-gray text-holiday-dark rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-chart-column text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">Store Dashboard</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Completed actions, photos, and feedback for every store.</p>
+                        <div class="mt-6 text-holiday-dark text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+
+                    <div @click="selectTopic('General Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
+                        <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-tags text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">General Merchandising</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Accessory playbook, guidelines, and store-wide execution standards.</p>
+                        <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+
+                    <div v-if="isManager || currentStore?.layout === '3.0'" @click="selectTopic('3.0 Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-green/20">
+                        <div class="w-14 h-14 bg-holiday-lightGreen text-holiday-green rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-cube text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">3.0 Merchandising</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Specific guidelines, checklists, and setups for Shop 3.0 environments.</p>
+                        <div class="mt-6 text-holiday-green text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+
+                    <div @click="selectTopic('AppleCare+ Strategy')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
+                        <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-shield-halved text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">AppleCare+ Strategy</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Objection handling and conversational toolkits.</p>
+                        <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+
+                    <div @click="selectTopic('Toolkit')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
+                        <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-toolbox text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">Toolkit</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Accessories planogram visual reference and operational shortcuts.</p>
+                        <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+
+                    <div @click="selectTopic('Feedback')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-green/20">
+                        <div class="w-14 h-14 bg-holiday-lightGreen text-holiday-green rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-comment-dots text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">Feedback</h2>
+                        <p class="text-sm text-holiday-subtext flex-1">Submit merchandising ideas, report issues, and share good practices.</p>
+                        <div class="mt-6 text-holiday-green text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: CONTENT HUB -->
+            <div v-else-if="currentView === 'content'" class="flex-1 w-full bg-white relative z-10 min-h-screen shadow-2xl">
+                <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <button @click="goBack" class="text-holiday-subtext hover:text-holiday-dark transition-colors flex items-center font-medium mr-4 flex-shrink-0">
+                            <i class="fa-solid fa-chevron-left mr-2"></i> Back
+                        </button>
+                        <h2 class="text-lg font-bold truncate" :class="topicColorClass">{{ contentTitle }}</h2>
+                    </div>
+                    <div class="text-xs text-holiday-subtext font-medium truncate ml-4">{{ isManager ? 'Regional Manager' : userName }}</div>
+                </header>
+
+                <main class="p-4 md:p-8 max-w-5xl mx-auto pb-24">
+
+                    <!-- REGIONAL MANAGER: STORE DASHBOARD -->
+                    <div v-if="selectedTopic === 'Store Dashboard'">
+
+                        <!-- All stores -->
+                        <div v-if="!dashboardStore">
+                            <h3 class="text-2xl font-bold">Store Dashboard</h3>
+                            <p class="text-sm text-holiday-subtext mb-6">Tap a store to see completed actions, photos, and feedback.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div v-for="s in storeSummaries" :key="s.id" @click="dashboardStoreId = s.id" class="apple-card apple-card-hover cursor-pointer border border-gray-100 !p-5">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div>
+                                            <p class="text-xs text-holiday-subtext font-medium">#{{ s.id }}</p>
+                                            <p class="font-bold">{{ s.name }}</p>
+                                        </div>
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full" :class="s.layout === '3.0' ? 'bg-holiday-lightGreen text-holiday-green' : 'bg-holiday-lightRed text-holiday-red'">{{ s.layout === '3.0' ? '3.0' : 'General' }}</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-holiday-gray rounded-full overflow-hidden mb-2">
+                                        <div class="h-full bg-holiday-green transition-all" :style="{ width: s.pct + '%' }"></div>
+                                    </div>
+                                    <p class="text-xs text-holiday-subtext mb-3">{{ s.done }} of {{ s.total }} actions complete ({{ s.pct }}%)</p>
+                                    <div class="flex space-x-4 text-xs text-holiday-subtext">
+                                        <span><i class="fa-solid fa-camera mr-1"></i>{{ s.photos }} photos</span>
+                                        <span><i class="fa-solid fa-comment-dots mr-1"></i>{{ s.feedback }} feedback</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Single store detail -->
+                        <div v-else>
+                            <div v-for="section in sectionsFor(dashboardStore)" :key="section.title" class="mb-8">
+                                <h3 class="text-xl font-bold mb-3" :class="section.color">{{ section.title }}</h3>
+                                <div class="apple-card space-y-3">
+                                    <div v-for="task in section.tasks" :key="task.id" class="p-3 rounded-lg border" :class="isDone(task.id, dashboardStore.id) ? 'border-holiday-green bg-holiday-lightGreen' : 'border-gray-200'">
+                                        <div class="flex items-start">
+                                            <i class="mt-0.5 mr-3 text-xl" :class="isDone(task.id, dashboardStore.id) ? 'fa-solid fa-circle-check text-holiday-green' : 'fa-regular fa-circle text-gray-300'"></i>
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium">{{ task.title }}</p>
+                                                <p v-if="isDone(task.id, dashboardStore.id)" class="text-xs text-holiday-subtext mt-1">
+                                                    Completed by {{ taskInfo(task.id, dashboardStore.id).by }} · {{ formatDate(taskInfo(task.id, dashboardStore.id).at) }}
+                                                </p>
+                                                <div v-if="photosFor(task.id, dashboardStore.id).length" class="mt-2 flex flex-wrap gap-2">
+                                                    <img v-for="p in photosFor(task.id, dashboardStore.id)" :key="p.id" :src="p.data" @click="viewingPhoto = p" class="w-20 h-20 object-cover rounded-lg cursor-zoom-in border border-gray-200">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 class="text-xl font-bold mb-3">Feedback from this store</h3>
+                            <p v-if="!feedbackFrom(dashboardStore.id).length" class="text-sm text-holiday-subtext">No feedback submitted yet.</p>
+                            <div class="space-y-4">
+                                <div v-for="post in feedbackFrom(dashboardStore.id)" :key="post.id" class="apple-card border border-gray-100">
+                                    <p class="text-xs text-holiday-subtext mb-1">{{ post.author }} · {{ timeAgo(post.at) }} · {{ post.type }}</p>
+                                    <h4 class="font-bold text-lg mb-1">{{ post.title }}</h4>
+                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ post.description }}</p>
+                                    <img v-if="post.photo" :src="post.photo" @click="viewingPhoto = { data: post.photo, by: post.author, at: post.at }" class="mt-3 max-h-48 rounded-xl cursor-zoom-in border border-gray-200">
+                                    <p class="text-xs text-holiday-subtext mt-3"><i class="fa-solid fa-heart text-holiday-red mr-1"></i>{{ post.likes.length }} · <i class="fa-solid fa-comment mr-1"></i>{{ post.comments.length }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manager note on checklist pages -->
+                    <div v-if="isManager && (selectedTopic === 'General Merchandising' || selectedTopic === '3.0 Merchandising')" class="mb-6 p-4 rounded-xl bg-holiday-gray text-sm text-holiday-subtext">
+                        <i class="fa-solid fa-circle-info mr-1"></i> This is the reference view. Open <b>Store Dashboard</b> to see each store's progress and photos.
+                    </div>
+
+                    <!-- 1. GENERAL MERCHANDISING -->
+                    <div v-if="selectedTopic === 'General Merchandising'">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold">Merchandising Guidelines</h3>
+                            <p class="text-sm text-holiday-subtext">General store-wide execution standards</p>
+                        </div>
+
+                        <div class="apple-card mb-8">
+                            <div class="space-y-3">
+                                <div v-for="task in generalTasks" :key="task.id" class="flex items-start p-3 rounded-lg border transition-all"
+                                     :class="isDone(task.id) ? 'border-holiday-red bg-holiday-lightRed' : 'border-gray-200 hover:bg-gray-50'">
+                                    <button @click="toggleTask(task.id)" :disabled="isManager" class="mt-0.5 mr-3 flex-shrink-0 text-xl transition-colors" :class="isDone(task.id) ? 'text-holiday-red' : 'text-gray-300 hover:text-gray-400'">
+                                        <i :class="isDone(task.id) ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'"></i>
+                                    </button>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium" :class="isDone(task.id) ? 'text-gray-500 line-through' : 'text-holiday-dark'">{{ task.title }}</p>
+                                        <p v-if="isDone(task.id)" class="text-xs text-holiday-subtext mt-1">Completed by {{ taskInfo(task.id).by }} · {{ formatDate(taskInfo(task.id).at) }}</p>
+                                        <div v-if="!isManager" class="mt-2 flex flex-wrap items-center gap-2">
+                                            <img v-for="p in photosFor(task.id)" :key="p.id" :src="p.data" @click="viewingPhoto = p" class="w-14 h-14 object-cover rounded-lg cursor-zoom-in border border-gray-200">
+                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-red hover:text-holiday-redDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photo</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-4">Holiday Accessory Bundles</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div class="apple-card flex flex-col border-t-4 border-holiday-red" v-for="bundle in bundles" :key="bundle.id">
+                                    <h4 class="font-bold text-lg mb-1">{{ bundle.name }}</h4>
+                                    <p class="text-sm text-holiday-subtext mb-4">{{ bundle.goal }}</p>
+                                    <ul class="text-sm space-y-2 mb-4 flex-1">
+                                        <li v-for="prod in bundle.products" :key="prod" class="flex items-start text-holiday-dark">
+                                            <i class="fa-solid fa-plus text-[10px] mt-1 mr-2 text-holiday-red"></i> {{ prod }}
+                                        </li>
+                                    </ul>
+                                    <div class="bg-holiday-lightRed p-3 rounded-lg">
+                                        <p class="text-sm text-holiday-redDark italic">"{{ bundle.script }}"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 3.0 MERCHANDISING -->
+                    <div v-if="selectedTopic === '3.0 Merchandising'">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold">Shop 3.0 Execution</h3>
+                            <p class="text-sm text-holiday-subtext">Master Checklist for 3.0 environments</p>
+                        </div>
+
+                        <div class="apple-card mb-6">
+                            <div class="space-y-3">
+                                <div v-for="task in shop30Tasks" :key="task.id" class="flex items-start p-3 rounded-lg border transition-all"
+                                     :class="isDone(task.id) ? 'border-holiday-green bg-holiday-lightGreen' : 'border-gray-200 hover:bg-gray-50'">
+                                    <button @click="toggleTask(task.id)" :disabled="isManager" class="mt-0.5 mr-3 flex-shrink-0 text-xl transition-colors" :class="isDone(task.id) ? 'text-holiday-green' : 'text-gray-300 hover:text-gray-400'">
+                                        <i :class="isDone(task.id) ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'"></i>
+                                    </button>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium" :class="isDone(task.id) ? 'text-gray-500 line-through' : 'text-holiday-dark'">{{ task.title }}</p>
+                                        <p v-if="isDone(task.id)" class="text-xs text-holiday-subtext mt-1">Completed by {{ taskInfo(task.id).by }} · {{ formatDate(taskInfo(task.id).at) }}</p>
+                                        <div v-if="!isManager" class="mt-2 flex flex-wrap items-center gap-2">
+                                            <img v-for="p in photosFor(task.id)" :key="p.id" :src="p.data" @click="viewingPhoto = p" class="w-14 h-14 object-cover rounded-lg cursor-zoom-in border border-gray-200">
+                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-green hover:text-holiday-greenDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photo</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. APPLECARE+ STRATEGY -->
+                    <div v-if="selectedTopic === 'AppleCare+ Strategy'">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold">Objection Handling</h3>
+                            <p class="text-sm text-holiday-subtext">Common scenarios and response strategies</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="apple-card border-l-4 border-holiday-red" v-for="obj in objections" :key="obj.quote">
+                                <div class="flex items-start space-x-3 mb-4">
+                                    <div class="w-8 h-8 rounded-full bg-holiday-lightRed flex items-center justify-center text-holiday-red flex-shrink-0">
+                                        <i class="fa-solid fa-user"></i>
+                                    </div>
+                                    <p class="font-bold text-holiday-dark mt-1">"{{ obj.quote }}"</p>
+                                </div>
+                                <div class="bg-holiday-gray p-4 rounded-xl">
+                                    <p class="text-xs font-bold text-holiday-subtext uppercase tracking-wider mb-2">Response Strategy</p>
+                                    <p class="text-sm text-gray-700 mb-3">{{ obj.response }}</p>
+                                    <p class="text-xs text-holiday-red font-medium"><i class="fa-solid fa-lightbulb mr-1"></i> {{ obj.tip }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. TOOLKIT -->
+                    <div v-if="selectedTopic === 'Toolkit'">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold">Execution Toolkit</h3>
+                            <p class="text-sm text-holiday-subtext">Quick references and operational shortcuts</p>
+                        </div>
+
+                        <div class="space-y-4 mb-8">
+                            <a href="https://www.icloud.com/shortcuts/ef490bce201d4e579ffcb6358bf911dc" target="_blank" class="apple-card bg-holiday-red text-white block hover:bg-holiday-redDark transition-colors !mb-0">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-bold mb-2">AppleCare Pricing Shortcut</h3>
+                                        <p class="text-sm opacity-90 max-w-sm">Download the admin-approved iOS Shortcut for instant pricing lookups directly from your device.</p>
+                                    </div>
+                                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
+                                        <i class="fa-solid fa-arrow-down text-2xl"></i>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="https://apple.ent.box.com/folder/439228209404" target="_blank" class="apple-card bg-holiday-green text-white block hover:bg-holiday-greenDark transition-colors !mb-0">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-bold mb-2">Apple Product Velocity Sheet</h3>
+                                        <p class="text-sm opacity-90 max-w-sm">Download the Fall 2026 PDF covering audio, home, iPad, Mac, and Apple Watch velocity references.</p>
+                                    </div>
+                                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md flex-shrink-0 ml-4">
+                                        <i class="fa-solid fa-file-pdf text-2xl"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-4">Holiday Accessories Planogram</h3>
+                            <div class="overflow-x-auto hide-scrollbar pb-4">
+                                <div class="min-w-[1000px] bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                                    <h4 class="text-center font-bold text-2xl mb-6 tracking-tight">Accessories</h4>
+                                    <div class="grid grid-cols-10 gap-3 mb-3">
+                                        <div v-for="letter in ['A','B','C','D','E','F','G','H','I','J']" :key="letter" class="text-center font-bold text-holiday-subtext text-xl">{{ letter }}</div>
+                                    </div>
+                                    <div class="grid grid-cols-10 gap-3">
+                                        <div v-for="(item, idx) in planogramGrid" :key="idx" class="bg-holiday-gray border border-gray-200 rounded-lg p-2 flex flex-col justify-between h-36 hover:border-holiday-red hover:shadow-md transition-all relative">
+                                            <div class="w-2 h-2 bg-gray-300 rounded-full mx-auto mb-2 shadow-inner"></div>
+                                            <div class="text-[9px] font-bold text-holiday-dark text-center leading-tight mb-2">{{ item.name }}</div>
+                                            <div class="text-[9px] font-mono text-holiday-subtext text-center mt-auto bg-white rounded py-1 border border-gray-100 break-all">{{ item.id || 'N/A' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. FEEDBACK -->
+                    <div v-if="selectedTopic === 'Feedback'">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                            <div class="apple-card border-t-4 border-holiday-green h-fit">
+                                <h3 class="text-2xl font-bold mb-2">Submit Feedback</h3>
+                                <p class="text-sm text-holiday-subtext mb-6">Share a good practice, report a merchandising issue, or suggest an improvement.</p>
+
+                                <form @submit.prevent="submitFeedback" class="space-y-5">
+                                    <div>
+                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Type of Feedback</label>
+                                        <select v-model="feedbackForm.type" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-holiday-green outline-none bg-holiday-gray">
+                                            <option>Merchandising Ideas</option>
+                                            <option>General Feedback</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Title</label>
+                                        <input type="text" v-model="feedbackForm.title" required class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-holiday-green outline-none bg-holiday-gray" placeholder="Brief summary...">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Description</label>
+                                        <textarea v-model="feedbackForm.description" required class="w-full border border-gray-200 rounded-xl p-3 text-sm h-32 focus:ring-2 focus:ring-holiday-green outline-none bg-holiday-gray" placeholder="Provide details..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Upload Photo</label>
+                                        <div v-if="feedbackForm.photo" class="relative">
+                                            <img :src="feedbackForm.photo" class="w-full max-h-56 object-cover rounded-xl border border-gray-200">
+                                            <button type="button" @click="feedbackForm.photo = ''" class="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full"><i class="fa-solid fa-times"></i></button>
+                                        </div>
+                                        <div v-else @click="pickPhoto({ kind: 'feedback' })" class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-holiday-gray">
+                                            <i class="fa-solid fa-cloud-arrow-up text-xl text-holiday-subtext mb-2"></i>
+                                            <p class="text-xs text-holiday-subtext font-medium">Tap to take or choose a photo</p>
+                                        </div>
+                                    </div>
+                                    <button type="submit" :disabled="submitting" class="w-full bg-holiday-green hover:bg-holiday-greenDark disabled:opacity-60 text-white font-bold rounded-xl px-4 py-3 transition-colors mt-2">
+                                        {{ submitting ? 'Submitting…' : 'Submit Feedback' }}
+                                    </button>
+                                </form>
+
+                                <div v-if="feedbackSubmitted" class="mt-4 p-4 bg-holiday-lightGreen text-holiday-green rounded-xl text-sm font-bold text-center flex items-center justify-center">
+                                    <i class="fa-solid fa-check-circle mr-2"></i> Feedback submitted successfully!
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-2xl font-bold mb-4">Community Insights</h3>
+                                <p v-if="!sortedFeedback.length" class="text-sm text-holiday-subtext">No feedback yet. Be the first to share.</p>
+                                <div class="space-y-4">
+                                    <div class="apple-card" v-for="post in sortedFeedback" :key="post.id">
+                                        <div class="flex items-center space-x-3 mb-3">
+                                            <div class="w-10 h-10 rounded-full bg-holiday-green text-white flex items-center justify-center font-bold flex-shrink-0">{{ post.author[0] }}</div>
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-sm truncate">{{ post.author }}</p>
+                                                <p class="text-xs text-holiday-subtext">{{ timeAgo(post.at) }} · {{ post.type }}</p>
+                                            </div>
+                                        </div>
+                                        <h4 class="font-bold text-lg mb-1">{{ post.title }}</h4>
+                                        <p class="text-sm text-gray-700 mb-3 whitespace-pre-line">{{ post.description }}</p>
+                                        <img v-if="post.photo" :src="post.photo" @click="viewingPhoto = { data: post.photo, by: post.author, at: post.at }" class="mb-3 w-full max-h-64 object-cover rounded-xl cursor-zoom-in border border-gray-200">
+
+                                        <div class="flex space-x-5 text-holiday-subtext">
+                                            <button @click="toggleLike(post)" class="text-xs flex items-center font-medium transition-colors" :class="post.likes.includes(userKey) ? 'text-holiday-red' : 'hover:text-holiday-red'">
+                                                <i class="mr-1" :class="post.likes.includes(userKey) ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"></i> {{ post.likes.length }}
+                                            </button>
+                                            <button @click="openComments[post.id] = !openComments[post.id]" class="text-xs flex items-center font-medium hover:text-holiday-dark transition-colors">
+                                                <i class="fa-regular fa-comment mr-1"></i> {{ post.comments.length }}
+                                            </button>
+                                        </div>
+
+                                        <div v-if="openComments[post.id]" class="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                                            <div v-for="(c, i) in post.comments" :key="i" class="bg-holiday-gray rounded-xl px-3 py-2">
+                                                <p class="text-xs font-bold">{{ c.author }} <span class="font-normal text-holiday-subtext">· {{ timeAgo(c.at) }}</span></p>
+                                                <p class="text-sm text-gray-700 whitespace-pre-line">{{ c.text }}</p>
+                                            </div>
+                                            <form @submit.prevent="addComment(post)" class="flex gap-2">
+                                                <input v-model="commentDrafts[post.id]" placeholder="Write a comment..." class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-holiday-gray focus:ring-2 focus:ring-holiday-green outline-none">
+                                                <button type="submit" class="bg-holiday-green hover:bg-holiday-greenDark text-white rounded-xl px-4 text-sm font-bold"><i class="fa-solid fa-paper-plane"></i></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </transition>
+    </div>
+
+    <script>
+        /* ============================================================
+           SETUP: paste your Firebase web config below to share data
+           across every device. While it's null, the hub runs in demo
+           mode and only saves on the device you're using.
+           ============================================================ */
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDpP07pMLC11ab6HQxIcSgkNDyTkByNQzQ",
+            authDomain: "holiday-hub-73e3f.firebaseapp.com",
+            projectId: "holiday-hub-73e3f",
+            storageBucket: "holiday-hub-73e3f.firebasestorage.app",
+            messagingSenderId: "354050341847",
+            appId: "1:354050341847:web:ce4a8485e2724287e6a992"
+        };
+        /* Example:
+        const FIREBASE_CONFIG = {
+            apiKey: "...",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        */
+
+        const MANAGER_PASSWORD = 'R5050Holiday';
+
+        // layout: '3.0' stores see General + 3.0 Merchandising; '2.0' stores see General only
+        const STORES = [
+            { id: '0543', name: 'FORT LAUDERDALE', code: '108246', layout: '2.0' },
+            { id: '0551', name: 'PLANTATION',      code: '28752',  layout: '2.0' },
+            { id: '0552', name: 'MIAMI',           code: '28753',  layout: '2.0' },
+            { id: '0553', name: 'MIAMI',           code: '28754',  layout: '3.0' },
+            { id: '0554', name: 'BOCA RATON',      code: '28755',  layout: '2.0' },
+            { id: '0555', name: 'HIALEAH',         code: '28756',  layout: '3.0' },
+            { id: '0557', name: 'MIAMI',           code: '32737',  layout: '3.0' },
+            { id: '0558', name: 'AVENTURA',        code: '32738',  layout: '3.0' },
+            { id: '0559', name: 'PEMBROKE PINES',  code: '32739',  layout: '3.0' },
+            { id: '0808', name: 'BOYNTON BEACH',   code: '108245', layout: '2.0' },
+            { id: '1136', name: 'CORAL SPRINGS',   code: '254599', layout: '2.0' },
+            { id: '1168', name: 'WELLINGTON',      code: '287778', layout: '2.0' },
+            { id: '1178', name: 'FLORIDA CITY',    code: '323216', layout: '2.0' },
+            { id: '1258', name: 'DAVIE',           code: '541220', layout: '2.0' },
+            { id: '1498', name: 'MIAMI BEACH',     code: '370426', layout: '2.0' },
+            { id: '1502', name: 'MIAMI',           code: '299873', layout: '3.0' }
+        ].map(s => ({ ...s, label: `BEST BUY - ${s.id}-${s.name} (${s.code})` }));
+
+        const GENERAL_TASKS = [
+            { id: 'gen1', title: 'Spider-Wraps & Acrylic Cases: Having pencils, keyboards, and audio with security for customers to grab.' },
+            { id: 'gen2', title: 'Accessory Trays: Utilize accessory trays to present open-box ecosystems and options where permitted.' },
+            { id: 'gen3', title: '2.0 Shop Pegs: Since you cannot stage physical bundles on tables, bundle via proximity. Hang 20W power adapters directly adjacent to MagSafe chargers and high-volume cables so the customer naturally grabs both.' },
+            { id: 'gen4', title: 'Open box basket/tray in shop' },
+            { id: 'gen5', title: 'Dedicated register' },
+            { id: 'gen6', title: 'AppleCare+ ESL (monthly where applicable)' }
+        ];
+
+        const SHOP30_TASKS = [
+            { id: '30a', title: 'Evaluate empty glass cage spaces for colorful audio displays.' },
+            { id: '30e', title: 'Flex Glass Cages Ex: when Apple TV isn’t available populate with audio prioritizing color pop. Same is applicable for iPhone cases & Apple Watch bands.' },
+            { id: '30f', title: 'Flex Bar Staging: Convert bare countertops into "Gifts Ready to Go" feature bars, and potentially have accessories bundles.' },
+            { id: '30c', title: 'Evaluate Beats visibility on the flex bar.' },
+            { id: '30d', title: 'Identify areas where additional gift discovery is possible.' },
+            { id: '30g', title: 'Open box basket/tray in shop' },
+            { id: '30h', title: 'Dedicated register' },
+            { id: '30i', title: 'AppleCare+ ESL (monthly where applicable)' }
+        ];
+
+        /* ---------- Storage: Firebase (shared) or this device (demo) ---------- */
+        function createBackend(onChange) {
+            const empty = () => ({ progress: {}, photos: [], feedback: [] });
+            const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+            if (!FIREBASE_CONFIG) {
+                const KEY = 'r5050-data';
+                const state = JSON.parse(localStorage.getItem(KEY) || 'null') || empty();
+                const snapshot = () => JSON.parse(JSON.stringify(state));
+                const commit = () => { localStorage.setItem(KEY, JSON.stringify(state)); onChange(snapshot()); };
+                const post = id => state.feedback.find(f => f.id === id);
+                return {
+                    mode: 'local',
+                    init() { onChange(snapshot()); },
+                    async setTask(storeId, taskId, completed, by) {
+                        (state.progress[storeId] ||= {})[taskId] = { completed, by, at: Date.now() };
+                        commit();
+                    },
+                    async addPhoto(p) { state.photos.push({ id: uid(), ...p }); commit(); },
+                    async addFeedback(f) { state.feedback.push({ id: uid(), likes: [], comments: [], ...f }); commit(); },
+                    async toggleLike(id, user, liked) {
+                        const f = post(id);
+                        f.likes = liked ? f.likes.filter(u => u !== user) : [...f.likes, user];
+                        commit();
+                    },
+                    async addComment(id, c) { post(id).comments.push(c); commit(); }
+                };
+            }
+
+            firebase.initializeApp(FIREBASE_CONFIG);
+            const db = firebase.firestore();
+            const FV = firebase.firestore.FieldValue;
+            const state = empty();
+            const listen = (name, apply) => db.collection(name).onSnapshot(
+                snap => { apply(snap); onChange({ ...state }); },
+                err => alert('Sync error: ' + err.message)
+            );
+            return {
+                mode: 'cloud',
+                init() {
+                    listen('progress', s => { state.progress = {}; s.forEach(d => { state.progress[d.id] = d.data(); }); });
+                    listen('photos',   s => { state.photos   = s.docs.map(d => ({ id: d.id, ...d.data() })); });
+                    listen('feedback', s => { state.feedback = s.docs.map(d => ({ id: d.id, ...d.data() })); });
+                },
+                setTask: (storeId, taskId, completed, by) =>
+                    db.collection('progress').doc(storeId).set({ [taskId]: { completed, by, at: Date.now() } }, { merge: true }),
+                addPhoto: p => db.collection('photos').add(p),
+                addFeedback: f => db.collection('feedback').add({ likes: [], comments: [], ...f }),
+                toggleLike: (id, user, liked) =>
+                    db.collection('feedback').doc(id).update({ likes: liked ? FV.arrayRemove(user) : FV.arrayUnion(user) }),
+                addComment: (id, c) => db.collection('feedback').doc(id).update({ comments: FV.arrayUnion(c) })
+            };
+        }
+
+        // Shrinks photos (max 1000px JPEG) so they upload fast and fit in the database
+        function compressImage(file, max = 1000, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(1, max / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(url);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => reject(new Error('This image format is not supported.'));
+                img.src = url;
+            });
+        }
+
+        let backend;
+
+        Vue.createApp({
+            data() {
+                return {
+                    currentView: 'login',
+                    selectedTopic: '',
+                    selectedStore: '',
+                    userName: '',
+                    isManager: false,
+                    showManagerModal: false,
+                    managerPassword: '',
+                    managerError: '',
+                    syncMode: FIREBASE_CONFIG ? 'cloud' : 'local',
+                    shared: { progress: {}, photos: [], feedback: [] },
+                    stores: STORES,
+                    generalTasks: GENERAL_TASKS,
+                    shop30Tasks: SHOP30_TASKS,
+                    dashboardStoreId: null,
+                    photoTarget: null,
+                    uploading: false,
+                    viewingPhoto: null,
+                    submitting: false,
+                    feedbackSubmitted: false,
+                    feedbackForm: { type: 'Merchandising Ideas', title: '', description: '', photo: '' },
+                    openComments: {},
+                    commentDrafts: {},
+                    bundles: [
+                        { id: 1, name: 'Stocking Stuffer Essentials', goal: 'Help gift-givers identify practical charging essentials.', products: ['20W USB-C Power Adapter', '2m Woven USB-C Cable'], script: 'Giving a new iPhone this year? You might want to grab this adapter so they can fast-charge right out of the box.' },
+                        { id: 2, name: 'iPad Creative Suite', goal: 'Help customers build a complete iPad experience.', products: ['Apple Pencil', 'Smart Folio Case'], script: 'Are they planning to draw or take notes? The Apple Pencil completely changes how you use the iPad.' }
+                    ],
+                    objections: [
+                        { quote: "I'm buying this as a gift.", response: "That's a great gift! A lot of people add AppleCare+ before wrapping it so the person receiving it doesn't have to worry right away.", tip: "Frame it as enhancing the gift." },
+                        { quote: "It's too expensive.", response: "I completely understand. Just to give you context, a cracked screen repair out of pocket can be over $279, but with AppleCare+, it's just $29.", tip: "Compare upfront cost vs out-of-pocket repair." }
+                    ],
+                    planogramGrid: [
+                        { col: 'A', name: '20W USB-C POWER ADAPTER', id: '6437121' },
+                        { col: 'B', name: '40W DYNAMIC POWER ADAPTER W/ 60W MAX', id: '6479666' },
+                        { col: 'C', name: '30W USB-C POWER ADAPTER', id: '6206538' },
+                        { col: 'D', name: '70W USB-C POWER ADAPTER', id: '6546995' },
+                        { col: 'E', name: '60W USB-C CHARGE CABLE (1M)', id: '6562024' },
+                        { col: 'F', name: '240W USB-C CHARGE CABLE (2M)', id: '6535192' },
+                        { col: 'G', name: 'LIGHTNING TO USB CABLE (1M)', id: '6409794' },
+                        { col: 'H', name: 'USB-C TO LIGHTNING CABLE (1 M)', id: '6409793' },
+                        { col: 'I', name: 'USB-C TO LIGHTNING CABLE (2M)', id: '6474586' },
+                        { col: 'J', name: 'USB-C TO MAGSAFE 3 CABLE (2M)', id: '6485371' },
+                        { col: 'A', name: 'MAGSAFE CHARGER (1M)', id: '6343813' },
+                        { col: 'B', name: 'MAGSAFE CHARGER (2M)', id: '6343816' },
+                        { col: 'C', name: 'APPLE WATCH MAG FAST CHARGER USB-C 1M', id: '6474587' },
+                        { col: 'D', name: 'EARPODS LIGHTNING CONNECTOR', id: '5577816' },
+                        { col: 'E', name: 'EARPODS', id: '6848136' },
+                        { col: 'F', name: 'EARPODS (USB-C)', id: '6550100' },
+                        { col: 'G', name: 'USB-C TO APPLE 3.5 MM HEADPHONE JACK ADAPTER', id: '6228671' },
+                        { col: 'H', name: 'USB-C TO LIGHTNING ADAPTER', id: '6562025' },
+                        { col: 'I', name: 'APPLE AIRTAG 1 PACK', id: '6461919' },
+                        { col: 'J', name: 'APPLECARE+ HANGTAG', id: '' }
+                    ]
+                };
+            },
+            computed: {
+                currentStore() { return STORES.find(s => s.id === this.selectedStore); },
+                headerTitle() { return this.isManager ? 'Regional Manager' : (this.currentStore?.label || ''); },
+                dashboardStore() { return STORES.find(s => s.id === this.dashboardStoreId); },
+                contentTitle() {
+                    return this.selectedTopic === 'Store Dashboard' && this.dashboardStore ? this.dashboardStore.label : this.selectedTopic;
+                },
+                topicColorClass() {
+                    if (this.selectedTopic === 'Store Dashboard') return 'text-holiday-dark';
+                    if (['General Merchandising', 'AppleCare+ Strategy', 'Toolkit'].includes(this.selectedTopic)) return 'text-holiday-red';
+                    return 'text-holiday-green';
+                },
+                userKey() {
+                    return this.isManager ? 'RM' : `${this.selectedStore}:${this.userName.trim().toLowerCase()}`;
+                },
+                authorLabel() {
+                    return this.isManager ? 'Regional Manager' : `${this.userName.trim()} (Store #${this.selectedStore})`;
+                },
+                sortedFeedback() { return [...this.shared.feedback].sort((a, b) => b.at - a.at); },
+                storeSummaries() {
+                    return STORES.map(s => {
+                        const tasks = this.tasksFor(s);
+                        const done = tasks.filter(t => this.isDone(t.id, s.id)).length;
+                        return {
+                            ...s, done, total: tasks.length,
+                            pct: Math.round((done / tasks.length) * 100),
+                            photos: this.shared.photos.filter(p => p.storeId === s.id).length,
+                            feedback: this.shared.feedback.filter(f => f.storeId === s.id).length
+                        };
+                    });
+                }
+            },
+            methods: {
+                // ----- Sign in / out -----
+                login() {
+                    this.isManager = false;
+                    localStorage.setItem('r5050-session', JSON.stringify({ name: this.userName, store: this.selectedStore }));
+                    this.currentView = 'topics';
+                },
+                managerLogin() {
+                    if (this.managerPassword !== MANAGER_PASSWORD) {
+                        this.managerError = 'Incorrect password.';
+                        return;
+                    }
+                    this.isManager = true;
+                    this.managerPassword = '';
+                    this.managerError = '';
+                    this.showManagerModal = false;
+                    this.currentView = 'topics';
+                },
+                logout() {
+                    this.isManager = false;
+                    this.selectedTopic = '';
+                    this.dashboardStoreId = null;
+                    this.currentView = 'login';
+                },
+                selectTopic(topic) {
+                    this.selectedTopic = topic;
+                    this.dashboardStoreId = null;
+                    this.feedbackSubmitted = false;
+                    this.currentView = 'content';
+                    window.scrollTo(0, 0);
+                },
+                goBack() {
+                    if (this.selectedTopic === 'Store Dashboard' && this.dashboardStoreId) this.dashboardStoreId = null;
+                    else this.currentView = 'topics';
+                    window.scrollTo(0, 0);
+                },
+
+                // ----- Checklists -----
+                tasksFor(store) { return store.layout === '3.0' ? [...GENERAL_TASKS, ...SHOP30_TASKS] : GENERAL_TASKS; },
+                sectionsFor(store) {
+                    const sections = [{ title: 'General Merchandising', color: 'text-holiday-red', tasks: GENERAL_TASKS }];
+                    if (store.layout === '3.0') sections.push({ title: '3.0 Merchandising', color: 'text-holiday-green', tasks: SHOP30_TASKS });
+                    return sections;
+                },
+                taskInfo(taskId, storeId = this.selectedStore) { return (this.shared.progress[storeId] || {})[taskId]; },
+                isDone(taskId, storeId = this.selectedStore) { return !!this.taskInfo(taskId, storeId)?.completed; },
+                async toggleTask(taskId) {
+                    if (this.isManager) return;
+                    try { await backend.setTask(this.selectedStore, taskId, !this.isDone(taskId), this.userName.trim()); }
+                    catch (e) { alert('Could not save: ' + e.message); }
+                },
+
+                // ----- Photos -----
+                photosFor(taskId, storeId = this.selectedStore) {
+                    return this.shared.photos.filter(p => p.storeId === storeId && p.taskId === taskId).sort((a, b) => a.at - b.at);
+                },
+                pickPhoto(target) {
+                    this.photoTarget = target;
+                    this.$refs.photoInput.value = '';
+                    this.$refs.photoInput.click();
+                },
+                async onPhotoPicked(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    this.uploading = true;
+                    try {
+                        const data = await compressImage(file);
+                        if (this.photoTarget.kind === 'task') {
+                            await backend.addPhoto({ storeId: this.selectedStore, taskId: this.photoTarget.taskId, data, by: this.userName.trim(), at: Date.now() });
+                        } else {
+                            this.feedbackForm.photo = data;
+                        }
+                    } catch (err) {
+                        alert('Could not save photo: ' + err.message);
+                    } finally {
+                        this.uploading = false;
+                    }
+                },
+
+                // ----- Feedback, likes, comments -----
+                feedbackFrom(storeId) { return this.sortedFeedback.filter(f => f.storeId === storeId); },
+                async submitFeedback() {
+                    this.submitting = true;
+                    try {
+                        await backend.addFeedback({
+                            storeId: this.isManager ? 'RM' : this.selectedStore,
+                            author: this.authorLabel,
+                            type: this.feedbackForm.type,
+                            title: this.feedbackForm.title.trim(),
+                            description: this.feedbackForm.description.trim(),
+                            photo: this.feedbackForm.photo,
+                            at: Date.now()
+                        });
+                        this.feedbackForm = { type: 'Merchandising Ideas', title: '', description: '', photo: '' };
+                        this.feedbackSubmitted = true;
+                        setTimeout(() => { this.feedbackSubmitted = false; }, 2500);
+                    } catch (e) {
+                        alert('Could not submit feedback: ' + e.message);
+                    } finally {
+                        this.submitting = false;
+                    }
+                },
+                toggleLike(post) {
+                    backend.toggleLike(post.id, this.userKey, post.likes.includes(this.userKey))
+                        .catch(e => alert('Could not save like: ' + e.message));
+                },
+                addComment(post) {
+                    const text = (this.commentDrafts[post.id] || '').trim();
+                    if (!text) return;
+                    backend.addComment(post.id, { author: this.authorLabel, text, at: Date.now() })
+                        .then(() => { this.commentDrafts[post.id] = ''; })
+                        .catch(e => alert('Could not save comment: ' + e.message));
+                },
+
+                // ----- Formatting -----
+                formatDate(ts) {
+                    return ts ? new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+                },
+                timeAgo(ts) {
+                    const mins = Math.floor((Date.now() - ts) / 60000);
+                    if (mins < 1) return 'Just now';
+                    if (mins < 60) return `${mins} min ago`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
+                    const days = Math.floor(hrs / 24);
+                    return days < 7 ? `${days} day${days > 1 ? 's' : ''} ago` : this.formatDate(ts);
+                }
+            },
+            mounted() {
+                const session = JSON.parse(localStorage.getItem('r5050-session') || 'null');
+                if (session) { this.userName = session.name || ''; this.selectedStore = session.store || ''; }
+                backend = createBackend(state => { this.shared = state; });
+                backend.init();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
