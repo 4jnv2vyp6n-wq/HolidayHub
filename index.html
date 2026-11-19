@@ -138,11 +138,11 @@
                         <div class="mt-6 text-holiday-dark text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
                     </div>
 
-                    <div v-if="isManager || currentStore?.layout === '2.0'" @click="selectTopic('General Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
+                    <div v-if="isManager || currentStore?.layout === '2.0'" @click="selectTopic('2.0 Merchandising')" class="apple-card apple-card-hover cursor-pointer group flex flex-col h-full border border-transparent hover:border-holiday-red/20">
                         <div class="w-14 h-14 bg-holiday-lightRed text-holiday-red rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-tags text-xl"></i>
                         </div>
-                        <h2 class="text-xl font-bold mb-2">General Merchandising</h2>
+                        <h2 class="text-xl font-bold mb-2">2.0 Merchandising</h2>
                         <p class="text-sm text-holiday-subtext flex-1">Accessory playbook, guidelines, and store-wide execution standards.</p>
                         <div class="mt-6 text-holiday-red text-sm font-bold flex items-center">Explore <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></div>
                     </div>
@@ -213,7 +213,7 @@
                                             <p class="text-xs text-holiday-subtext font-medium">#{{ s.id }}</p>
                                             <p class="font-bold">{{ s.name }}</p>
                                         </div>
-                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full" :class="s.layout === '3.0' ? 'bg-holiday-lightGreen text-holiday-green' : 'bg-holiday-lightRed text-holiday-red'">{{ s.layout === '3.0' ? '3.0' : 'General' }}</span>
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full" :class="s.layout === '3.0' ? 'bg-holiday-lightGreen text-holiday-green' : 'bg-holiday-lightRed text-holiday-red'">{{ s.layout === '3.0' ? '3.0' : '2.0' }}</span>
                                     </div>
                                     <div class="w-full h-2 bg-holiday-gray rounded-full overflow-hidden mb-2">
                                         <div class="h-full bg-holiday-green transition-all" :style="{ width: s.pct + '%' }"></div>
@@ -264,12 +264,12 @@
                     </div>
 
                     <!-- Manager note on checklist pages -->
-                    <div v-if="isManager && (selectedTopic === 'General Merchandising' || selectedTopic === '3.0 Merchandising')" class="mb-6 p-4 rounded-xl bg-holiday-gray text-sm text-holiday-subtext">
+                    <div v-if="isManager && (selectedTopic === '2.0 Merchandising' || selectedTopic === '3.0 Merchandising')" class="mb-6 p-4 rounded-xl bg-holiday-gray text-sm text-holiday-subtext">
                         <i class="fa-solid fa-circle-info mr-1"></i> This is the reference view. Open <b>Store Dashboard</b> to see each store's progress and photos.
                     </div>
 
-                    <!-- 1. GENERAL MERCHANDISING -->
-                    <div v-if="selectedTopic === 'General Merchandising'">
+                    <!-- 1. 2.0 MERCHANDISING -->
+                    <div v-if="selectedTopic === '2.0 Merchandising'">
                         <div class="mb-6">
                             <h3 class="text-2xl font-bold">Merchandising Guidelines</h3>
                             <p class="text-sm text-holiday-subtext">General store-wide execution standards</p>
@@ -534,7 +534,7 @@
 
         const MANAGER_PASSWORD = 'R5050Holiday';
 
-        // layout: '3.0' stores see 3.0 Merchandising only; '2.0' stores see General Merchandising only
+        // layout: '3.0' stores see 3.0 Merchandising only; '2.0' stores see 2.0 Merchandising only
         const STORES = [
             { id: '0543', name: 'FORT LAUDERDALE', code: '108246', layout: '2.0' },
             { id: '0551', name: 'PLANTATION',      code: '28752',  layout: '2.0' },
@@ -715,7 +715,7 @@
                 },
                 topicColorClass() {
                     if (this.selectedTopic === 'Store Dashboard') return 'text-holiday-dark';
-                    if (['General Merchandising', 'AppleCare+ Strategy', 'Toolkit'].includes(this.selectedTopic)) return 'text-holiday-red';
+                    if (['2.0 Merchandising', 'AppleCare+ Strategy', 'Toolkit'].includes(this.selectedTopic)) return 'text-holiday-red';
                     return 'text-holiday-green';
                 },
                 userKey() {
@@ -780,7 +780,7 @@
                 sectionsFor(store) {
                     return store.layout === '3.0'
                         ? [{ title: '3.0 Merchandising', color: 'text-holiday-green', tasks: SHOP30_TASKS }]
-                        : [{ title: 'General Merchandising', color: 'text-holiday-red', tasks: GENERAL_TASKS }];
+                        : [{ title: '2.0 Merchandising', color: 'text-holiday-red', tasks: GENERAL_TASKS }];
                 },
                 taskInfo(taskId, storeId = this.selectedStore) { return (this.shared.progress[storeId] || {})[taskId]; },
                 isDone(taskId, storeId = this.selectedStore) { return !!this.taskInfo(taskId, storeId)?.completed; },
