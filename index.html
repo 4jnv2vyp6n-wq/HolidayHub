@@ -50,11 +50,11 @@
         <div class="festive-bg"></div>
 
         <!-- Shared hidden photo picker (camera or library) -->
-        <input type="file" accept="image/*" ref="photoInput" class="hidden" @change="onPhotoPicked">
+        <input type="file" accept="image/*" multiple ref="photoInput" class="hidden" @change="onPhotoPicked">
 
         <!-- Saving indicator -->
         <div v-if="uploading" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-holiday-dark text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg flex items-center">
-            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving photo…
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> {{ uploadLabel }}
         </div>
 
         <!-- Photo viewer -->
@@ -247,7 +247,9 @@
                                     <p class="text-xs text-holiday-subtext mb-1">{{ post.author }} · {{ timeAgo(post.at) }} · {{ post.type }}</p>
                                     <h4 class="font-bold text-lg mb-1">{{ post.title }}</h4>
                                     <p class="text-sm text-gray-700 whitespace-pre-line">{{ post.description }}</p>
-                                    <img v-if="post.photo" :src="post.photo" @click="viewingPhoto = { data: post.photo, by: post.author, at: post.at }" class="mt-3 max-h-48 rounded-xl cursor-zoom-in border border-gray-200">
+                                    <div v-if="postPhotos(post).length" class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        <img v-for="(ph, pi) in postPhotos(post)" :key="pi" :src="ph" @click="viewingPhoto = { data: ph, by: post.author, at: post.at }" class="w-full h-28 object-cover rounded-xl cursor-zoom-in border border-gray-200">
+                                    </div>
                                     <p class="text-xs text-holiday-subtext mt-3"><i class="fa-solid fa-heart text-holiday-red mr-1"></i>{{ post.likes.length }} · <i class="fa-solid fa-comment mr-1"></i>{{ post.comments.length }}</p>
                                 </div>
                             </div>
@@ -288,7 +290,7 @@
                                         <p v-if="isDone(task.id)" class="text-xs text-holiday-subtext mt-1">Completed by {{ taskInfo(task.id).by }} · {{ formatDate(taskInfo(task.id).at) }}</p>
                                         <div v-if="!isManager" class="mt-2 flex flex-wrap items-center gap-2">
                                             <img v-for="p in photosFor(task.id)" :key="p.id" :src="p.data" @click="viewingPhoto = p" class="w-14 h-14 object-cover rounded-lg cursor-zoom-in border border-gray-200">
-                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-red hover:text-holiday-redDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photo</button>
+                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-red hover:text-holiday-redDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photos</button>
                                         </div>
                                     </div>
                                 </div>
@@ -325,7 +327,7 @@
                                         <p v-if="isDone(task.id)" class="text-xs text-holiday-subtext mt-1">Completed by {{ taskInfo(task.id).by }} · {{ formatDate(taskInfo(task.id).at) }}</p>
                                         <div v-if="!isManager" class="mt-2 flex flex-wrap items-center gap-2">
                                             <img v-for="p in photosFor(task.id)" :key="p.id" :src="p.data" @click="viewingPhoto = p" class="w-14 h-14 object-cover rounded-lg cursor-zoom-in border border-gray-200">
-                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-green hover:text-holiday-greenDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photo</button>
+                                            <button @click="pickPhoto({ kind: 'task', taskId: task.id })" class="text-xs text-holiday-green hover:text-holiday-greenDark font-medium flex items-center"><i class="fa-solid fa-camera mr-1"></i> Add Photos</button>
                                         </div>
                                     </div>
                                 </div>
@@ -406,7 +408,7 @@
                             </div>
 
                             <div class="mb-8">
-                                <h3 class="text-xl font-bold mb-4">Holiday Accessories Planogram</h3>
+                                <h3 class="text-xl font-bold mb-4">Holiday Vault Planogram</h3>
                                 <div class="overflow-x-auto hide-scrollbar pb-4">
                                     <div class="min-w-[1000px] bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                                         <h4 class="text-center font-bold text-2xl mb-6 tracking-tight">Accessories</h4>
@@ -492,14 +494,16 @@
                                         <textarea v-model="feedbackForm.description" required class="w-full border border-gray-200 rounded-xl p-3 text-sm h-32 focus:ring-2 focus:ring-holiday-green outline-none bg-holiday-gray" placeholder="Provide details..."></textarea>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Upload Photo</label>
-                                        <div v-if="feedbackForm.photo" class="relative">
-                                            <img :src="feedbackForm.photo" class="w-full max-h-56 object-cover rounded-xl border border-gray-200">
-                                            <button type="button" @click="feedbackForm.photo = ''" class="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full"><i class="fa-solid fa-times"></i></button>
+                                        <label class="block text-sm font-bold text-holiday-dark mb-1">Upload Photos <span class="font-normal text-holiday-subtext">(up to {{ maxFeedbackPhotos }})</span></label>
+                                        <div v-if="feedbackForm.photos.length" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                                            <div v-for="(ph, pi) in feedbackForm.photos" :key="pi" class="relative">
+                                                <img :src="ph" class="w-full h-24 object-cover rounded-xl border border-gray-200">
+                                                <button type="button" @click="feedbackForm.photos.splice(pi, 1)" class="absolute top-1 right-1 w-7 h-7 bg-black/60 text-white rounded-full text-xs" aria-label="Remove photo"><i class="fa-solid fa-times"></i></button>
+                                            </div>
                                         </div>
-                                        <div v-else @click="pickPhoto({ kind: 'feedback' })" class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-holiday-gray">
+                                        <div v-if="feedbackForm.photos.length < maxFeedbackPhotos" @click="pickPhoto({ kind: 'feedback' })" class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-holiday-gray">
                                             <i class="fa-solid fa-cloud-arrow-up text-xl text-holiday-subtext mb-2"></i>
-                                            <p class="text-xs text-holiday-subtext font-medium">Tap to take or choose a photo</p>
+                                            <p class="text-xs text-holiday-subtext font-medium">{{ feedbackForm.photos.length ? 'Add more photos' : 'Tap to take or choose photos' }}</p>
                                         </div>
                                     </div>
                                     <button type="submit" :disabled="submitting" class="w-full bg-holiday-green hover:bg-holiday-greenDark disabled:opacity-60 text-white font-bold rounded-xl px-4 py-3 transition-colors mt-2">
@@ -526,7 +530,9 @@
                                         </div>
                                         <h4 class="font-bold text-lg mb-1">{{ post.title }}</h4>
                                         <p class="text-sm text-gray-700 mb-3 whitespace-pre-line">{{ post.description }}</p>
-                                        <img v-if="post.photo" :src="post.photo" @click="viewingPhoto = { data: post.photo, by: post.author, at: post.at }" class="mb-3 w-full max-h-64 object-cover rounded-xl cursor-zoom-in border border-gray-200">
+                                        <div v-if="postPhotos(post).length" class="mb-3 grid gap-2" :class="postPhotos(post).length === 1 ? 'grid-cols-1' : 'grid-cols-2'">
+                                            <img v-for="(ph, pi) in postPhotos(post)" :key="pi" :src="ph" @click="viewingPhoto = { data: ph, by: post.author, at: post.at }" class="w-full object-cover rounded-xl cursor-zoom-in border border-gray-200" :class="postPhotos(post).length === 1 ? 'max-h-64' : 'h-36'">
+                                        </div>
 
                                         <div class="flex space-x-5 text-holiday-subtext">
                                             <button @click="toggleLike(post)" class="text-xs flex items-center font-medium transition-colors" :class="post.likes.includes(userKey) ? 'text-holiday-red' : 'hover:text-holiday-red'">
@@ -594,6 +600,7 @@
 
         const MANAGER_PASSWORD = 'R5050Holiday';
         const MANAGER_NAME = 'Natalia';
+        const MAX_FEEDBACK_PHOTOS = 4; // keeps each post under Firebase's 1 MB limit
 
         // layout: '3.0' stores see 3.0 Merchandising only; '2.0' stores see 2.0 Merchandising only
         const STORES = [
@@ -622,7 +629,7 @@
             { id: 'gen4',  title: 'Open-box basket/tray in shop' },
             { id: 'gen5',  title: 'Dedicated register' },
             { id: 'gen6',  title: 'AppleCare+ ESL (monthly where applicable)' },
-            { id: 'gen10', title: 'Holiday accessories planogram' },
+            { id: 'gen10', title: 'Holiday Vault planogram' },
             { id: 'gen11', title: 'Easily accessible AirTags' },
             { id: 'gen12', title: 'AppleCare+ hangtags in shop' },
             { id: 'gen13', title: 'AppleCare+ hangtags in front lanes' }
@@ -636,7 +643,7 @@
             { id: '30h', title: 'Dedicated register' },
             { id: '30i', title: 'AppleCare+ ESL (monthly where applicable)' },
             { id: '30m', title: 'iPad keyboards and/or pencils easily accessible' },
-            { id: '30n', title: 'Holiday accessories planogram' },
+            { id: '30n', title: 'Holiday Vault planogram' },
             { id: '30o', title: 'Easily accessible AirTags' },
             { id: '30p', title: 'AppleCare+ hangtags in shop' },
             { id: '30q', title: 'AppleCare+ hangtags in front lanes' }
@@ -753,7 +760,9 @@
                     viewingPhoto: null,
                     submitting: false,
                     feedbackSubmitted: false,
-                    feedbackForm: { type: 'Merchandising Ideas', title: '', description: '', photo: '' },
+                    feedbackForm: { type: 'Merchandising Ideas', title: '', description: '', photos: [] },
+                    maxFeedbackPhotos: MAX_FEEDBACK_PHOTOS,
+                    uploadLabel: 'Saving photo…',
                     openComments: {},
                     commentDrafts: {},
                     objections: [
@@ -881,21 +890,31 @@
                     this.$refs.photoInput.click();
                 },
                 async onPhotoPicked(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    this.uploading = true;
-                    try {
-                        const data = await compressImage(file);
-                        if (this.photoTarget.kind === 'task') {
-                            await backend.addPhoto({ storeId: this.selectedStore, taskId: this.photoTarget.taskId, data, by: this.userName.trim(), at: Date.now() });
-                        } else {
-                            this.feedbackForm.photo = data;
-                        }
-                    } catch (err) {
-                        alert('Could not save photo: ' + err.message);
-                    } finally {
-                        this.uploading = false;
+                    let files = Array.from(e.target.files || []);
+                    if (!files.length) return;
+                    const isTask = this.photoTarget.kind === 'task';
+                    if (!isTask) {
+                        const room = MAX_FEEDBACK_PHOTOS - this.feedbackForm.photos.length;
+                        if (files.length > room) alert(`You can add up to ${MAX_FEEDBACK_PHOTOS} photos per post. Only the first ${room} will be added.`);
+                        files = files.slice(0, room);
                     }
+                    this.uploading = true;
+                    let failed = 0;
+                    for (let i = 0; i < files.length; i++) {
+                        this.uploadLabel = files.length > 1 ? `Saving photo ${i + 1} of ${files.length}…` : 'Saving photo…';
+                        try {
+                            if (isTask) {
+                                const data = await compressImage(files[i]);
+                                await backend.addPhoto({ storeId: this.selectedStore, taskId: this.photoTarget.taskId, data, by: this.userName.trim(), at: Date.now() });
+                            } else {
+                                this.feedbackForm.photos.push(await compressImage(files[i], 800, 0.6));
+                            }
+                        } catch (err) {
+                            failed++;
+                        }
+                    }
+                    this.uploading = false;
+                    if (failed) alert(`${failed} photo${failed > 1 ? 's' : ''} could not be saved. Please try again.`);
                 },
 
                 // ----- Feedback, likes, comments -----
@@ -904,6 +923,7 @@
                 sortedComments(post) {
                     return [...post.comments].sort((a, b) => (this.isManagerComment(b) - this.isManagerComment(a)) || (a.at - b.at));
                 },
+                postPhotos(post) { return post.photos?.length ? post.photos : (post.photo ? [post.photo] : []); },
                 feedbackFrom(storeId) { return this.sortedFeedback.filter(f => f.storeId === storeId); },
                 async submitFeedback() {
                     this.submitting = true;
@@ -914,10 +934,10 @@
                             type: this.feedbackForm.type,
                             title: this.feedbackForm.title.trim(),
                             description: this.feedbackForm.description.trim(),
-                            photo: this.feedbackForm.photo,
+                            photos: this.feedbackForm.photos,
                             at: Date.now()
                         });
-                        this.feedbackForm = { type: 'Merchandising Ideas', title: '', description: '', photo: '' };
+                        this.feedbackForm = { type: 'Merchandising Ideas', title: '', description: '', photos: [] };
                         this.feedbackSubmitted = true;
                         setTimeout(() => { this.feedbackSubmitted = false; }, 2500);
                     } catch (e) {
